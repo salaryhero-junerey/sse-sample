@@ -2,7 +2,7 @@ const express = require('express')
 
 const app = express()
 
-let clients = []
+let clients = new Map()
 
 app.get('/sse-endpoint', (req, res) => {
   // Set headers to establish SSE
@@ -13,35 +13,35 @@ app.get('/sse-endpoint', (req, res) => {
   // Send a comment to keep the connection alive in some proxies
   res.write(':\n\n')
 
-  const clientId = Date.now()
+  const clientId = "Junerey"
 
-  const newClient = {
-    id: clientId,
-    res
-  }
-
-  clients.push(newClient)
+  clients.set(clientId, res)
   console.log(`Client ${clientId} connected`)
 
   // Remove the client when the connection is closed
   req.on('close', () => {
-    clients = clients.filter(client => client.id !== clientId)
+    clients.delete(clientId)
+    console.log(`Client ${clientId} disconnected`)
   })
 })
 
 const sendEvent = (data) => {
-  clients.forEach(client => {
-    client.res.write(`data: ${JSON.stringify(data)}\n\n`)
-  })
+  const client = clients.get("Junerey")
+  if (client) {
+    client.write(`data: ${JSON.stringify(data)}\n\n`)
+  }
 }
 
-app.post('/send-message', (req, res) => {
+app.post('/send-message', (_, res) => {
   const eventData = {
-    type: 'referral_registration',
-    message: 'User has registered using your referral code'
+    type: 'export_complete',
+    downloadUrl: 'https://plus.unsplash.com/premium_photo-1682125748265-d362c809ba04?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
   }
 
-  sendEvent(eventData)
+  // send the event after 5 seconds
+  setTimeout(() => {
+    sendEvent(eventData)
+  }, 5000)
 
   res.status(200).send('Event sent')
 })
